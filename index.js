@@ -35,6 +35,7 @@ async function run() {
         const collegeCollection = client.db("college-compass").collection("colleges");
         const applicationCollection = client.db("college-compass").collection("Application");
         const reviewsCollection = client.db("college-compass").collection("reviews");
+        const usersCollection = client.db("college-compass").collection("users");
 
         app.get('/all-college', async (req, res) => {
             const result = await collegeCollection.find().toArray();
@@ -53,7 +54,7 @@ async function run() {
             res.send(result);
         })
 
-    // all applications 
+        // all applications 
         app.post('/myCollege', async (req, res) => {
             const data = req.body;
             const available = await applicationCollection.findOne({ collegeId: data.collegeId, email: data.email })
@@ -84,7 +85,15 @@ async function run() {
                 res.send(result);
             }
         })
-
+        //   users 
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const isAvailable = await usersCollection.findOne({ email: user.email })
+            if (!isAvailable) {
+                const result = await usersCollection.insertOne(user);
+                res.send(result);
+            }
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
