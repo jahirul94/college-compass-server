@@ -49,25 +49,31 @@ async function run() {
         })
 
         app.get('/reviews', async (req, res) => {
-            const result = await reviewsCollection.find().sort({date : -1}).limit(3).toArray();
+            const result = await reviewsCollection.find().sort({ date: -1 }).limit(3).toArray();
             res.send(result);
         })
 
-
+    // all applications 
         app.post('/myCollege', async (req, res) => {
             const data = req.body;
-            const result = await applicationCollection.insertOne(data);
-            res.send(result)
+            const available = await applicationCollection.findOne({ collegeId: data.collegeId, email: data.email })
+            if (!available) {
+                const result = await applicationCollection.insertOne(data);
+                res.send(result)
+            } else {
+                res.send({ message: "You have already Applied on This College" })
+            }
         })
+        // reviews 
         app.post('/reviews', async (req, res) => {
             const review = req.body;
-            const available = await reviewsCollection.findOne({ collegeId: review.collegeId })
+            const available = await reviewsCollection.findOne({ collegeId: review.collegeId, email: review.email })
             if (available) {
-                const filter = { collegeId: review.collegeId }
+                const filter = { collegeId: review.collegeId, email: review.email }
                 const updateDoc = {
                     $set: {
                         message: review.message,
-                        date : review.date
+                        date: review.date
                     },
                 };
                 const result = await reviewsCollection.updateOne(filter, updateDoc)
