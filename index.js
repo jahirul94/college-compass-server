@@ -33,8 +33,8 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
         const collegeCollection = client.db("college-compass").collection("colleges");
-        const ApplicationCollection = client.db("college-compass").collection("Application");
-        const ReviewsCollection = client.db("college-compass").collection("reviews");
+        const applicationCollection = client.db("college-compass").collection("Application");
+        const reviewsCollection = client.db("college-compass").collection("reviews");
 
         app.get('/all-college', async (req, res) => {
             const result = await collegeCollection.find().toArray();
@@ -44,19 +44,39 @@ async function run() {
         app.get('/myCollege', async (req, res) => {
             const email = req.query.email;
             const query = { email: email }
-            const result = await ApplicationCollection.find(query).toArray();
+            const result = await applicationCollection.find(query).toArray();
             res.send(result)
         })
 
+        app.get('/reviews', async (req, res) => {
+            const result = await reviewsCollection.find().sort({date : -1}).limit(3).toArray();
+            res.send(result);
+        })
+
+
         app.post('/myCollege', async (req, res) => {
             const data = req.body;
-            const result = await ApplicationCollection.insertOne(data);
+            const result = await applicationCollection.insertOne(data);
             res.send(result)
         })
         app.post('/reviews', async (req, res) => {
             const review = req.body;
-            const result = await ReviewsCollection.insertOne(review);
-            res.send(result);
+            const available = await reviewsCollection.findOne({ collegeId: review.collegeId })
+            if (available) {
+                const filter = { collegeId: review.collegeId }
+                const updateDoc = {
+                    $set: {
+                        message: review.message,
+                        date : review.date
+                    },
+                };
+                const result = await reviewsCollection.updateOne(filter, updateDoc)
+                res.send(result);
+            }
+            else {
+                const result = await reviewsCollection.insertOne(review);
+                res.send(result);
+            }
         })
 
 
