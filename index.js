@@ -31,11 +31,12 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        // await client.connect();
+        await client.connect();
         const collegeCollection = client.db("college-compass").collection("colleges");
         const applicationCollection = client.db("college-compass").collection("Application");
         const reviewsCollection = client.db("college-compass").collection("reviews");
         const usersCollection = client.db("college-compass").collection("users");
+        const researchCollection = client.db("college-compass").collection("researchPaper");
 
         app.get('/all-college', async (req, res) => {
             const result = await collegeCollection.find().toArray();
@@ -53,6 +54,12 @@ async function run() {
             const result = await reviewsCollection.find().sort({ date: -1 }).limit(3).toArray();
             res.send(result);
         })
+        
+        app.get('/researchPaper' , async (req , res ) =>{
+           const result = await researchCollection.find().toArray();
+           res.send(result)
+        })
+
         app.get("/users", async (req, res) => {
             const email = req.query.email;
             const result = await usersCollection.findOne({ email: email });
