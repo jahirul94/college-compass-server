@@ -31,7 +31,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
         const collegeCollection = client.db("college-compass").collection("colleges");
         const applicationCollection = client.db("college-compass").collection("Application");
         const reviewsCollection = client.db("college-compass").collection("reviews");
@@ -45,7 +45,7 @@ async function run() {
         app.get('/myCollege', async (req, res) => {
             const email = req.query.email;
             const query = { email: email }
-            const result = await applicationCollection.find(query).toArray();
+            const result = await applicationCollection.findOne(query);
             res.send(result)
         })
 
@@ -53,16 +53,21 @@ async function run() {
             const result = await reviewsCollection.find().sort({ date: -1 }).limit(3).toArray();
             res.send(result);
         })
+        app.get("/users", async (req, res) => {
+            const email = req.query.email;
+            const result = await usersCollection.findOne({ email: email });
+            res.send(result);
+        })
 
         // all applications 
         app.post('/myCollege', async (req, res) => {
             const data = req.body;
-            const available = await applicationCollection.findOne({ collegeId: data.collegeId, email: data.email })
+            const available = await applicationCollection.findOne({ email: data.email })
             if (!available) {
                 const result = await applicationCollection.insertOne(data);
                 res.send(result)
             } else {
-                res.send({ message: "You have already Applied on This College" })
+                res.send({ message: "You have already Admitted on a College" })
             }
         })
         // reviews 
@@ -93,6 +98,29 @@ async function run() {
                 const result = await usersCollection.insertOne(user);
                 res.send(result);
             }
+        })
+
+        // update user 
+        app.patch('/userDetails', async (req, res) => {
+            const data = req.body;
+            const query = { email: data.email }
+            const updateDoc = {
+                $set: {
+                    collegeName: data.college,
+                    collegeId: data.collegeId,
+                    name: data.name,
+                    address: data.address,
+                    subject: data.subject
+                },
+            };
+            const result1 = await applicationCollection.updateOne(query, updateDoc);
+            const updateUser = {
+                $set: {
+                    name: data.name,
+                },
+            };
+            const result2 = await usersCollection.updateOne(query, updateUser)
+            res.send([result1, result2])
         })
 
         // Send a ping to confirm a successful connection
